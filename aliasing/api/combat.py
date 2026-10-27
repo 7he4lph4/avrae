@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING
 
-from d20 import roll
+from d20 import ast, parse, roll
 
 import cogs5e.initiative as init
 from aliasing.api.functions import SimpleRollResult
@@ -10,12 +10,21 @@ from cogs5e.models.automation.utils import parse_save_bonuses
 from cogs5e.models.sheet.statblock import StatBlock
 from utils.argparser import ParsedArguments
 from utils.constants import SKILL_MAP
+from utils.dice import get_roll_comment
 from . import validators
 
 if TYPE_CHECKING:
     from ..evaluators import ScriptingEvaluator
 
 MAX_METADATA_SIZE = 100000
+
+
+def _roll_with_bonus(dice: str, bonus: str = None):
+    if bonus:
+        bonus_dice, comment = get_roll_comment(str(bonus))
+        dice_ast = parse(f"{dice}+({bonus_dice})")
+        dice = ast.Expression(dice_ast.roll, comment=comment or None)
+    return SimpleRollResult(roll(dice))
 
 
 # noinspection PyProtectedMember
@@ -266,6 +275,7 @@ class SimpleCombatant(AliasStatBlock):
         adv: bool = None,
         include_ieffects: bool = False,
         include_csettings: bool = False,
+        bonus: str = None,
     ):
         """
         Rolls a combatant's saving throw.
@@ -274,6 +284,7 @@ class SimpleCombatant(AliasStatBlock):
         :param bool adv: Whether to roll the save with advantage. Rolls with advantage if ``True``, disadvantage if ``False``, or normally if ``None``.
         :param bool include_ieffects: Whether to include initiative effects that modify save advantage or disadvantage.
         :param bool include_csettings: Whether to include character settings such as Halfling Luck.
+        :param str bonus: An optional dice expression to add to the generated roll, such as ``"1d4"`` or ``"-1d4"``.
         :returns: A SimpleRollResult describing the rolled save.
         :rtype: :class:`~aliasing.api.functions.SimpleRollResult`
         """  # noqa: E501
@@ -316,8 +327,7 @@ class SimpleCombatant(AliasStatBlock):
         if sb:
             saveroll = f'{saveroll}+{"+".join(sb)}'
 
-        save_roll = roll(saveroll)
-        return SimpleRollResult(save_roll)
+        return _roll_with_bonus(saveroll, bonus)
 
     def check(
         self,
@@ -325,6 +335,7 @@ class SimpleCombatant(AliasStatBlock):
         adv: bool = None,
         include_ieffects: bool = False,
         include_csettings: bool = False,
+        bonus: str = None,
     ):
         """
         Rolls a combatant's skill check.
@@ -333,6 +344,7 @@ class SimpleCombatant(AliasStatBlock):
         :param bool adv: Whether to roll with advantage. Rolls with advantage if ``True``, disadvantage if ``False``, or normally if ``None``.
         :param bool include_ieffects: Whether to include initiative effects that modify check bonuses or advantage.
         :param bool include_csettings: Whether to include character settings such as Halfling Luck and Reliable Talent.
+        :param str bonus: An optional dice expression to add to the generated roll, such as ``"1d4"`` or ``"-1d4"``.
         :returns: A SimpleRollResult describing the rolled check.
         :rtype: :class:`~aliasing.api.functions.SimpleRollResult`
         """  # noqa: E501
@@ -379,8 +391,7 @@ class SimpleCombatant(AliasStatBlock):
         if combat_bonuses:
             roll_str = f"{roll_str}+{'+'.join(combat_bonuses)}"
 
-        result = roll(roll_str)
-        return SimpleRollResult(result)
+        return _roll_with_bonus(roll_str, bonus)
 
     def damage(self, dice_str, crit=False, d=None, c=None, critdice=0, overheal=False):
         """

@@ -820,6 +820,9 @@ SimpleCombatant
     character settings, respectively. Both options default to ``False`` for
     compatibility with existing aliases.
 
+    Pass ``bonus="1d4"`` to add a custom dice expression to the generated roll.
+    The ``bonus`` argument follows the existing flags so positional calls remain compatible.
+
     .. attribute:: effects
 
         A list of :class:`~aliasing.api.combat.SimpleEffect` active on the combatant.
