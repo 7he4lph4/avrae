@@ -92,7 +92,7 @@ class TestSimpleCombatantSave:
         [(None, 0), ("", 0), ("2", 2), ("1d1", 1), ("-1d1", -1), ("1d1[bless]+2", 3), ("2*(1+1)", 4)],
     )
     def test_bonus_adds_to_generated_roll(self, simple_combatant, bonus, expected):
-        result = simple_combatant.save("dex", bonus=bonus)
+        result = simple_combatant.save("dex", args=f'-b "{bonus}"' if bonus else bonus)
         d20_value = d20.utils.leftmost(result.raw).total
         assert result.total == d20_value + 3 + expected
         assert result.full == f"{result.dice} = `{result.total}`"
@@ -106,7 +106,7 @@ class TestSimpleCombatantSave:
         ],
     )
     def test_bonus_preserves_annotations(self, simple_combatant, bonus, annotations):
-        result = simple_combatant.save("dex", bonus=bonus)
+        result = simple_combatant.save("dex", args=f'-b "{bonus}"')
         for annotation in annotations:
             assert annotation in result.full
             assert annotation in result.dice
@@ -121,7 +121,7 @@ class TestSimpleCombatantSave:
         ],
     )
     def test_bonus_preserves_comments(self, simple_combatant, bonus, expected, comment):
-        result = simple_combatant.save("dex", bonus=bonus)
+        result = simple_combatant.save("dex", args=f'-b "{bonus}"')
         assert result.result.comment == comment
         assert result.full == f"{result.dice} = `{result.total}`"
         assert str(result.result) == result.full
@@ -133,7 +133,7 @@ class TestSimpleCombatantSave:
         mock_combatant.character = MagicMock()
         mock_combatant.character.options.reroll = 1
 
-        result = simple_combatant.save("dex", False, True, True, "1d1")
+        result = simple_combatant.save("dex", False, True, True, "-b 1d1")
 
         assert "ro1" in result.full and "kl1" in result.full
         d20_value = d20.utils.leftmost(result.raw).total
@@ -142,7 +142,7 @@ class TestSimpleCombatantSave:
     @pytest.mark.parametrize("bonus", ["not dice", "(1d4"])
     def test_invalid_bonus_raises_dice_error(self, simple_combatant, bonus):
         with pytest.raises(d20.RollSyntaxError):
-            simple_combatant.save("dex", bonus=bonus)
+            simple_combatant.save("dex", args=f'-b "{bonus}"')
 
     def test_effect_advantage_applied(self, simple_combatant, effect_factory):
         effect_factory(("save_adv", {"dex"}, {"dex"}))
@@ -230,7 +230,7 @@ class TestSimpleCombatantCheck:
         [(None, 0), ("", 0), ("2", 2), ("1d1", 1), ("-1d1", -1), ("1d1[guidance]+2", 3), ("2*(1+1)", 4)],
     )
     def test_bonus_adds_to_generated_roll(self, simple_combatant, bonus, expected):
-        result = simple_combatant.check("perception", bonus=bonus)
+        result = simple_combatant.check("perception", args=f'-b "{bonus}"' if bonus else bonus)
         d20_value = d20.utils.leftmost(result.raw).total
         assert result.total == d20_value + 2 + expected
         assert result.full == f"{result.dice} = `{result.total}`"
@@ -244,7 +244,7 @@ class TestSimpleCombatantCheck:
         ],
     )
     def test_bonus_preserves_annotations(self, simple_combatant, bonus, annotations):
-        result = simple_combatant.check("perception", bonus=bonus)
+        result = simple_combatant.check("perception", args=f'-b "{bonus}"')
         for annotation in annotations:
             assert annotation in result.full
             assert annotation in result.dice
@@ -259,7 +259,7 @@ class TestSimpleCombatantCheck:
         ],
     )
     def test_bonus_preserves_comments(self, simple_combatant, bonus, expected, comment):
-        result = simple_combatant.check("perception", bonus=bonus)
+        result = simple_combatant.check("perception", args=f'-b "{bonus}"')
         assert result.result.comment == comment
         assert result.full == f"{result.dice} = `{result.total}`"
         assert str(result.result) == result.full
@@ -273,7 +273,7 @@ class TestSimpleCombatantCheck:
         mock_combatant.character.options.talent = True
         mock_combatant.skills.skills["perception"].prof = 1
 
-        result = simple_combatant.check("perception", True, True, True, "1d1")
+        result = simple_combatant.check("perception", True, True, True, "-b 1d1")
 
         assert "ro1" in result.full and "kh1" in result.full and "mi10" in result.full
         d20_value = d20.utils.leftmost(result.raw).total
@@ -282,7 +282,7 @@ class TestSimpleCombatantCheck:
     @pytest.mark.parametrize("bonus", ["not dice", "(1d4"])
     def test_invalid_bonus_raises_dice_error(self, simple_combatant, bonus):
         with pytest.raises(d20.RollSyntaxError):
-            simple_combatant.check("perception", bonus=bonus)
+            simple_combatant.check("perception", args=f'-b "{bonus}"')
 
     def test_effect_advantage_skill_specific(self, simple_combatant, effect_factory):
         effect_factory(("check_adv", {"stealth"}, {"stealth"}))
